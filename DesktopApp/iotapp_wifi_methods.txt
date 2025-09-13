@@ -1,0 +1,75 @@
+In the __init__() method:-
+       
+    # Set the WIFI network and WIFI settings properties to their empty values, these will be
+    # properly set when the connect_to_wifi() method is called
+    self.wifi = None
+    self.ssid = ""
+    self.passkey = ""
+    self.auto_connect = False
+    self.wait_time = 0
+
+def connect_to_wifi(self, wifi_settings=None, connect_now=False):
+    """
+    If WIFI settings have been provided then update the existing WIFI settings properties with
+    these values and action a WIFI connection attempt if the auto_connect property is True, the
+    WIFI settings are provided as a 4-tuple as given below:-
+        ssid:           SSID of access point to connect to
+        passkey:        Passkey of access point to connect to (assuming WPA2-PSK authentication)
+        auto_connect:   True if connection should be made immediately
+        wait_time:      Number of milliseconds to wait whilst attempting to connect, once this wait
+                        time has passed the connection attempt is aborted, a wait time of 0 or less
+                        indicates an indefinite wait time (i.e. continue to attempt to connect until
+                        a connection is made), minimum wait time is 101ms as there is already a
+                        100ms wait each time around the connection check loop
+    If no WIFI settings are provided then use the existing settings, the connect_now parameter
+    can be used to force a connection attempt irrespective of the value of auto_connect property
+    """
+    if wifi_settings:
+        self.ssid, self.passkey, self.auto_connect, self.wait_time = wifi_settings
+        
+    if self.auto_connect or connect_now:
+        if not self.wifi:
+            self.wifi = network.WLAN(network.STA_IF)
+        
+        if not self.wifi.active():
+            self.wifi.active(True)
+
+        if self.wifi.isconnected():  # If already connected then disconnect first
+            self.wifi.disconnect()
+            
+        if not self.wait_time > 0:  # Try to connect indefinitely
+            self.wifi.connect(self.ssid, self.passkey)
+            while not self.wifi.isconnected():
+                sleep(0.1)
+        else:
+            wait_end = ticks_ms() + self.wait_time  # Try to connect within wait_time milliseconds
+            self.wifi.connect(self.ssid, self.passkey)
+            while not self.wifi.isconnected() and (ticks_ms() < wait_end):
+                sleep(0.1)
+                
+            if not self.wifi.isconnected():
+                self.wifi.active(False)  # Still not connected after wait_time so deactivate WIFI
+
+def is_wifi_connected(self):
+    if self.wifi:
+        return self.wifi.isconnected()
+        
+    return False
+    
+def wifi_activate(self):
+    if self.wifi:
+        self.wifi.active(True)
+    
+def wifi_deactivate(self):
+    if self.wifi:
+         if self.wifi.isconnected():
+            self.wifi.disconnect()
+            self.wifi.active(False)
+        
+In the shutdown() method:-
+            
+    # Disconnect from WIFI if connected and deactivate the WIFI network
+    if self.wifi:
+        if self.wifi.isconnected():
+            self.wifi.disconnect()
+        self.wifi.active(False)
